@@ -73,7 +73,7 @@ The ordering is not arbitrary. You cannot meaningfully consent to sharing data a
 
 | Layer | Answers | Status |
 |---|---|---|
-| **[tessera-registry](./tessera-registry)** | Who exists? | 🔴 Planned |
+| **[tessera-registry](./tessera-registry)** | Who exists? | 🟡 In progress |
 | **[tessera-verify](./tessera-verify)** | Are you who you claim? | 🔴 Planned |
 | **[tessera-consent](./tessera-consent)** | Who may know what about you? | 🔴 Planned |
 | **[tessera-disburse](./tessera-disburse)** | What are you entitled to? | 🔴 Planned |
