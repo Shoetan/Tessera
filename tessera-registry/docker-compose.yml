@@ -1,0 +1,22 @@
+name: tessera-registry
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tessera-registry-postgres
+    environment:
+      POSTGRES_USER: tessera_registry
+      POSTGRES_PASSWORD: tessera_registry
+      POSTGRES_DB: tessera_registry
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tessera_registry"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      
+    volumes:
+      - tessera-registry-data:/var/lib/postgresql/data
+volumes:
+  tessera-registry-data:
