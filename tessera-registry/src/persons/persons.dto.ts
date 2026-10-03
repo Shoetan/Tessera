@@ -1,17 +1,21 @@
-import { Gender, PersonStatus } from "./types/index.js";
+import { IsDateString, IsEnum, IsNotEmpty, IsString } from "class-validator";
+import { Gender } from "../generated/prisma/enums.js";
 
+/* Data coming from the request body.
+ * status, createdAt and updatedAt are set by the server, so the client can't send them. */
 
-
-/* Data coming from the request body */
 export class CreatePersonDto {
+  @IsString()
+  @IsNotEmpty()
   givenName: string;
+
+  @IsString()
+  @IsNotEmpty()
   familyName: string;
-  dateOfBirth: Date;
+
+  @IsDateString() /* e.g. "1990-05-17" */
+  dateOfBirth: string;
+
+  @IsEnum(Gender)
   gender: Gender;
-  status: PersonStatus;
-  createdAt: Date;
-  updatedAt: Date;
-
 }
-
-
