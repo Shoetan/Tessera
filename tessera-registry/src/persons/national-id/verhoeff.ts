@@ -40,3 +40,17 @@ export function verhoeffCheckDigit(body : string) :number {
   }
     return inv[tally];
 }
+
+export function verhoeffValidate(id : string) :boolean {
+  let tally = 0;
+
+  for (let i = id.length - 1 ; i >= 0; --i) {
+    const digit = Number(id[i]);
+    const position =  id.length - 1 - i ;
+
+    const scrambled = p[position % 8] [digit];
+    tally = d[tally][scrambled];
+
+  }
+  return tally === 0;
+}
