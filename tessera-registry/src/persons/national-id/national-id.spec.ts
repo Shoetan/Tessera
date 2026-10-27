@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { generateFirstDigit, generateTenDigits, generateNationalId } from "./national-id.js";
+import { generateFirstDigit, generateTenDigits, generateNationalId, isAllSameDigit } from "./national-id.js";
 
 
 
@@ -29,3 +29,16 @@ test('generateNationalId should return 11 digits with the first digit from 2-9',
 
 
 })
+
+
+test('22222222222 is all the same digit', () => {
+  expect(isAllSameDigit('22222222222')).toBe(true);
+});
+
+test('24422222224 is not all the same digit', () => {
+  expect(isAllSameDigit('24422222224')).toBe(false);
+});
+
+test('an empty string is not all the same digit', () => {
+  expect(isAllSameDigit('')).toBe(false);
+});

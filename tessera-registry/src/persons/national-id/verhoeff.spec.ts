@@ -50,3 +50,5 @@ test('23066 is invalid (two middle digits swapped)', () => {
   const isValid = verhoeffValidate(id);
   expect(isValid).toBe(false);
 });
+
+

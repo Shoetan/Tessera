@@ -38,3 +38,17 @@ export function generateNationalId () : string {
 
   return `${firstDigit}${tenDigits}`;
 }
+
+export function isAllSameDigit(id: string): boolean {
+  if (id.length === 0) {
+    return false;
+  }
+  const firstChar = id[0];
+  for (let i = 1; i <id.length ; i ++) {
+    if (id[i] !== firstChar) {
+      return false;
+    }
+  }
+
+  return true;
+}
