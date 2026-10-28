@@ -1,4 +1,5 @@
-import { IsDateString, IsEnum, IsNotEmpty, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, MaxDate } from "class-validator";
 import { Gender } from "../generated/prisma/enums.js";
 
 /* Data coming from the request body.
@@ -13,9 +14,12 @@ export class CreatePersonDto {
   @IsNotEmpty()
   familyName: string;
 
-  @IsDateString() /* e.g. "1990-05-17" */
-  dateOfBirth: string;
+  @Type(() => Date) /* "1990-05-17" in the request becomes a real Date */
+  @IsDate()
+  @MaxDate(() => new Date()) /* worked out on every request, so "now" is always today */
+  dateOfBirth: Date;
 
   @IsEnum(Gender)
-  gender: Gender;
+  @IsOptional()
+  gender?: Gender;
 }
