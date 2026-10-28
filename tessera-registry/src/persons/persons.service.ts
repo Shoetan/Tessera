@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePersonDto } from './persons.dto.js';
 import { generateNationalId } from './national-id/national-id.js';
+import { PersonNotFoundException } from '../common/exceptions/person-not-found.exception.js';
 
 @Injectable()
 export class PersonsService {
 
-  /* This will be the service that is called by the controller to register a citizen. It might be async as there is gonna be a database operation here. Also I think here is a good place to add a repository to talk with postgres */
 
   constructor( private readonly prisma: PrismaService ) {}
 
@@ -20,6 +20,17 @@ export class PersonsService {
       gender: dto.gender,
       nationalId: nationalId
     }})
+  }
+
+
+  async findPersonById(id: string) {
+    const person = await this.prisma.person.findUnique({where: {id: id}})
+
+    if (!person) {
+      throw new PersonNotFoundException(id);
+    }
+
+    return person;
   }
 }
 

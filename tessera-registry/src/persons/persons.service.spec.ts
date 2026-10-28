@@ -3,11 +3,14 @@ import { PersonsService } from './persons.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePersonDto } from './persons.dto.js';
 import { validateVerhoeffCheckDigit } from './national-id/verhoeff.js';
+import { PersonNotFoundException } from '../common/exceptions/person-not-found.exception.js';
 
 describe('PersonsService', () => {
   let service: PersonsService;
   // a fake database: create is a spy that remembers what it was called with
-  let fakePrisma: { person: { create: ReturnType<typeof vi.fn> } };
+  let fakePrisma: {
+    person: { create: ReturnType<typeof vi.fn>; findUnique: ReturnType<typeof vi.fn> };
+  };
 
   const dto: CreatePersonDto = {
     givenName: 'Ada',
@@ -17,7 +20,7 @@ describe('PersonsService', () => {
   };
 
   beforeEach(async () => {
-    fakePrisma = { person: { create: vi.fn() } };
+    fakePrisma = { person: { create: vi.fn(), findUnique: vi.fn() } };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -55,5 +58,14 @@ describe('PersonsService', () => {
     fakePrisma.person.create.mockResolvedValue(saved);
 
     expect(await service.registerPerson(dto)).toBe(saved);
+  });
+
+  it('findPersonById throws PersonNotFoundException when no person has that id', async () => {
+    // findUnique does not throw when nothing matches; it returns null
+    fakePrisma.person.findUnique.mockResolvedValue(null);
+
+    await expect(service.findPersonById('no-such-id')).rejects.toBeInstanceOf(
+      PersonNotFoundException,
+    );
   });
 });

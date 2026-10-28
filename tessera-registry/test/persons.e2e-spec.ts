@@ -96,4 +96,32 @@ describe('PersonsController (e2e)', () => {
       expect(res.body.statusCode).toBe(400);
     });
   });
+
+  describe('GET /persons/:id', () => {
+    it('returns the person that was registered', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/persons')
+        .send(validPerson)
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/persons/${created.body.id}`)
+        .expect(200);
+
+      expect(res.body.id).toBe(created.body.id);
+      expect(res.body.nationalId).toBe(created.body.nationalId);
+    });
+
+    it('returns 404 in the standard error shape for an unknown id', async () => {
+      const unknownId = '00000000-0000-0000-0000-000000000000';
+
+      const res = await request(app.getHttpServer())
+        .get(`/persons/${unknownId}`)
+        .expect(404);
+
+      expect(res.body.statusCode).toBe(404);
+      expect(res.body.message).toBe(`Person with id "${unknownId}" was not found`);
+      expect(res.body.path).toBe(`/persons/${unknownId}`);
+    });
+  });
 });
