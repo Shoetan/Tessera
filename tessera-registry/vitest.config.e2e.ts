@@ -8,5 +8,9 @@ export default defineConfig({
     root: './',
     include: ['**/*.e2e-spec.ts'],
     globalSetup: ['./test/global-setup.ts'],
+    setupFiles: ['./test/setup-each.ts'],
+    // one shared database: run files one after another so one file's clean-up
+    // can never empty the tables in the middle of another file's test
+    fileParallelism: false,
   },
 });
