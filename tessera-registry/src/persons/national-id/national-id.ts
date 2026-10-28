@@ -1,4 +1,5 @@
 import {randomInt} from "node:crypto";
+import {verhoeffCheckDigit, validateVerhoeffCheckDigit} from "./verhoeff.js";
 
 export function generateFirstDigit () : string {
   // I can have lower and upper bounds for the first digit. It should be from 2 - 9 as constant values
@@ -36,7 +37,11 @@ export function generateNationalId () : string {
   const firstDigit = generateFirstDigit();
   const tenDigits = generateTenDigits();
 
-  return `${firstDigit}${tenDigits}`;
+  const body = `${firstDigit}${tenDigits}`;
+
+  const checkDigit = verhoeffCheckDigit(body);
+  
+  return `${body}${checkDigit}`;
 }
 
 export function isAllSameDigit(id: string): boolean {

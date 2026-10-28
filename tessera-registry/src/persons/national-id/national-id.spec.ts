@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import { generateFirstDigit, generateTenDigits, generateNationalId, isAllSameDigit } from "./national-id.js";
+import { validateVerhoeffCheckDigit } from "./verhoeff.js";
 
 
 
@@ -21,11 +22,11 @@ test('generateTenDigits should return 10 random digits from 0-9', ()=>{
 })
 
 
-test('generateNationalId should return 11 digits with the first digit from 2-9', ()=>{
+test('generateNationalId should return 12 digits with the first digit from 2-9', ()=>{
   const nationalId = generateNationalId();
   expect(typeof nationalId).toBe('string');
-  expect(nationalId).toHaveLength(11);
-  expect(nationalId).toMatch(/^[2-9][0-9]{10}$/); //regex to match a first digit from 2-9 followed by 10 digits from 0-9
+  expect(nationalId).toHaveLength(12);
+  expect(nationalId).toMatch(/^[2-9][0-9]{11}$/); //regex to match a first digit from 2-9 followed by 10 digits from 0-9
 
 
 })
@@ -41,4 +42,13 @@ test('24422222224 is not all the same digit', () => {
 
 test('an empty string is not all the same digit', () => {
   expect(isAllSameDigit('')).toBe(false);
+});
+
+
+test('every generated national ID passes Verhoeff validation', () => {
+  // one random ID proves little, so check many
+  for (let i = 0; i < 1000; i++) {
+    const nationalId = generateNationalId();
+    expect(validateVerhoeffCheckDigit(nationalId)).toBe(true);
+  }
 });
