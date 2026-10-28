@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 
 import {verhoeffCheckDigit, validateVerhoeffCheckDigit} from "./verhoeff.js";
+import { generateNationalId } from "./national-id.js";
 
 
 test('2360 gives check digit 6', () => {
@@ -52,3 +53,13 @@ test('23066 is invalid (two middle digits swapped)', () => {
 });
 
 
+test('changing any single digit of a valid ID makes it invalid', () => {
+  const id = generateNationalId();
+
+  for (let i = 0; i < id.length; i++) {
+    // (digit + 1) % 10 always gives a different digit, and 9 wraps round to 0
+    const changedDigit = (Number(id[i]) + 1) % 10;
+    const changedId = id.slice(0, i) + changedDigit + id.slice(i + 1);
+    expect(validateVerhoeffCheckDigit(changedId)).toBe(false);
+  }
+});

@@ -34,10 +34,14 @@ export function generateTenDigits () {
 }
 
 export function generateNationalId () : string {
-  const firstDigit = generateFirstDigit();
-  const tenDigits = generateTenDigits();
+  let body = '';
 
-  const body = `${firstDigit}${tenDigits}`;
+  // a body where every digit is the same (22222222222) is rejected, so draw again
+  do {
+    const firstDigit = generateFirstDigit();
+    const tenDigits = generateTenDigits();
+    body = `${firstDigit}${tenDigits}`;
+  } while (isAllSameDigit(body));
 
   const checkDigit = verhoeffCheckDigit(body);
   
