@@ -20,7 +20,9 @@ export class CreatePersonDto {
   @ApiProperty({ type: String, format: 'date', example: '1990-05-14', description: 'Must not be in the future' })
   @Type(() => Date) /* "1990-05-17" in the request becomes a real Date */
   @IsDate()
-  @MaxDate(() => new Date()) /* worked out on every request, so "now" is always today */
+  @MaxDate(() => new Date()) 
+  
+  /* worked out on every request, so "now" is always today */
   dateOfBirth: Date;
 
   @ApiPropertyOptional({ enum: Gender, example: Gender.female })

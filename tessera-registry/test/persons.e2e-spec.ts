@@ -94,6 +94,7 @@ describe('PersonsController (e2e)', () => {
         .expect(400);
 
       expect(res.body.statusCode).toBe(400);
+      expect(res.body.message).toContain('dateOfBirth must not be in the future');
     });
   });
 
