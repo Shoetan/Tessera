@@ -51,6 +51,20 @@ describe('PersonsController (e2e)', () => {
       expect(saved?.nationalId).toBe(res.body.nationalId);
     });
 
+    it('registering a person writes exactly one CREATED audit row, recording who did it', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/persons')
+        .send(validPerson)
+        .expect(201);
+
+      // read the audit table ourselves, the response does not include it
+      const entries = await prisma.auditEntry.findMany({ where: { personId: res.body.id } });
+      expect(entries).toHaveLength(1);
+      expect(entries[0].action).toBe('created');
+      // no login in P0, so the controller passes 'system' (Decisions Log, 2026-10-29)
+      expect(entries[0].actor).toBe('system');
+    });
+
     it('registers a person without a gender, because gender is optional', async () => {
       const { gender, ...withoutGender } = validPerson;
 
