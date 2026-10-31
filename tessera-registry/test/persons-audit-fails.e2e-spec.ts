@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
-import { AuditService } from './../src/audit/audit.service.js';
+import {AuditService} from './../src/audit/audit.service.js';
 import { HttpExceptionFilter } from './../src/common/filters/http-exception.filter.js';
 import { createValidationPipe } from './../src/common/pipes/validation.pipe.js';
 
