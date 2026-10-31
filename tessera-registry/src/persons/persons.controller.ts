@@ -26,7 +26,7 @@ export class PersonsController {
     description: 'Missing name, date of birth in the future, unrecognised gender, or a nationalId was sent',
   })
   registerPerson( @Body() createPersonDto:CreatePersonDto){
-    return this.personsService.registerPerson(createPersonDto);
+    return this.personsService.registerPerson(createPersonDto, 'system');
 
   }
 
