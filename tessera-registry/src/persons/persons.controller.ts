@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -8,7 +8,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreatePersonDto, PersonResponseDto } from './persons.dto.js';
+import { CreatePersonDto, PersonResponseDto, UpdatePersonDto } from './persons.dto.js';
 import { PersonsService } from './persons.service.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 
@@ -38,6 +38,20 @@ export class PersonsController {
   @ApiNotFoundResponse({ type: ErrorResponseDto, description: 'No person has this id' })
   findPersonById( @Param('id') id: string){
     return this.personsService.findPersonById(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a person by their internal id (never by national ID)' })
+  @ApiParam({ name: 'id', example: '3f2b8c1e-6d4a-4f7e-9b2c-1a5d7e9f0c3b' })
+  @ApiOkResponse({ type: PersonResponseDto })
+  @ApiNotFoundResponse({ type: ErrorResponseDto, description: 'No person has this id' })
+  @ApiBadRequestResponse({
+    type: ErrorResponseDto,
+    description: 'Missing name, date of birth in the future, unrecognised gender, or a nationalId was sent',
+  })
+
+  updatePerson( @Param('id') id: string, @Body() updatePersonDto: UpdatePersonDto){
+    return this.personsService.updatePerson(id, updatePersonDto, "system");
   }
 
 
