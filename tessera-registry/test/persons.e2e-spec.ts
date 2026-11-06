@@ -320,4 +320,110 @@ describe('PersonsController (e2e)', () => {
       expect(await updatedRows(person.id)).toHaveLength(0);
     });
   });
+
+  describe('POST /persons/:id/deactivate', () => {
+    const reason = 'Reported deceased, death certificate on file';
+
+    async function register() {
+      const res = await request(app.getHttpServer())
+        .post('/persons')
+        .send(validPerson)
+        .expect(201);
+      return res.body;
+    }
+
+    // only the DEACTIVATED rows; registering always leaves one CREATED row behind
+    async function deactivatedRows(personId: string) {
+      return prisma.auditEntry.findMany({ where: { personId, action: 'deactivated' } });
+    }
+
+    it('deactivates a person: status becomes inactive, and one deactivated row is written with the reason', async () => {
+      const person = await register();
+
+      const res = await request(app.getHttpServer())
+        .post(`/persons/${person.id}/deactivate`)
+        .send({ reason })
+        .expect(200);
+
+      expect(res.body.status).toBe('inactive');
+
+      // really saved, not just echoed back
+      const saved = await prisma.person.findUnique({ where: { id: person.id } });
+      expect(saved?.status).toBe('inactive');
+
+      const rows = await deactivatedRows(person.id);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].reason).toBe(reason);
+      expect(rows[0].changes).toEqual({ status: { from: 'active', to: 'inactive' } });
+      expect(rows[0].actor).toBe('system');
+    });
+
+    it('returns 404 when the person id does not exist', async () => {
+      const unknownId = '00000000-0000-0000-0000-000000000000';
+
+      const res = await request(app.getHttpServer())
+        .post(`/persons/${unknownId}/deactivate`)
+        .send({ reason })
+        .expect(404);
+
+      expect(res.body.message).toBe(`Person with id "${unknownId}" was not found`);
+    });
+
+    it('returns 400 when no reason is given, and changes nothing', async () => {
+      const person = await register();
+
+      await request(app.getHttpServer())
+        .post(`/persons/${person.id}/deactivate`)
+        .send({})
+        .expect(400);
+
+      const saved = await prisma.person.findUnique({ where: { id: person.id } });
+      expect(saved?.status).toBe('active');
+      expect(await deactivatedRows(person.id)).toHaveLength(0);
+    });
+
+    it('returns 409 when the person is already inactive, and writes no second row', async () => {
+      const person = await register();
+
+      await request(app.getHttpServer())
+        .post(`/persons/${person.id}/deactivate`)
+        .send({ reason })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .post(`/persons/${person.id}/deactivate`)
+        .send({ reason })
+        .expect(409);
+
+      expect(res.body.statusCode).toBe(409);
+      expect(res.body.message).toBe(`Person with id "${person.id}" is already inactive`);
+      expect(await deactivatedRows(person.id)).toHaveLength(1);
+    });
+
+    it('the person and their national ID can still be read after deactivation', async () => {
+      const person = await register();
+
+      await request(app.getHttpServer())
+        .post(`/persons/${person.id}/deactivate`)
+        .send({ reason })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/persons/${person.id}`)
+        .expect(200);
+
+      expect(res.body.nationalId).toBe(person.nationalId);
+      expect(res.body.status).toBe('inactive');
+    });
+
+    it('there is no DELETE route', async () => {
+      const person = await register();
+
+      await request(app.getHttpServer())
+        .delete(`/persons/${person.id}`)
+        .expect(404);
+
+      expect(await prisma.person.findUnique({ where: { id: person.id } })).not.toBeNull();
+    });
+  });
 });
