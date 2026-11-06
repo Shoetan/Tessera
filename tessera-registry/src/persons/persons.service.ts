@@ -86,12 +86,25 @@ export class PersonsService {
         { from: Prisma.InputJsonValue | null; to: Prisma.InputJsonValue | null }
       > = {};
 
+       const fields = ['givenName', 'familyName', 'dateOfBirth', 'gender'] as const;
 
-      
+       for (const field of fields) {
 
-      if (dto.familyName !== undefined && dto.familyName !== person.familyName){
-        changes.familyName = { from: person.familyName, to: dto.familyName };
-      }
+        if (field === 'dateOfBirth') {
+          if (
+            dto.dateOfBirth !== undefined &&
+            dto.dateOfBirth.getTime() !== person.dateOfBirth.getTime()
+          ) {
+            changes.dateOfBirth = { from: person.dateOfBirth, to: dto.dateOfBirth };
+          }
+        } else {
+          if (dto[field] !== undefined && dto[field] !== person[field]) {
+            changes[field] = { from: person[field], to: dto[field] };
+          }
+        }
+       }
+
+       if(Object.keys(changes).length === 0) { return person} // if nothing is updated in changes 
 
         const updatedPerson = await tx.person.update({
           where: { id: id },
