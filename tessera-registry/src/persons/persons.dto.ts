@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsDate, IsEnum, IsNotEmpty, IsOptional, IsString, MaxDate } from "class-validator";
 import { Gender, PersonStatus } from "../generated/prisma/enums.js";
@@ -65,3 +65,10 @@ export class PersonResponseDto {
   @ApiProperty({ example: '2026-10-28T19:04:51.000Z' })
   updatedAt: Date;
 }
+
+export class UpdatePersonDto extends PartialType(CreatePersonDto) {
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+}
+

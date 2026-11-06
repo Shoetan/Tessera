@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreatePersonDto } from './persons.dto.js';
+import { CreatePersonDto, UpdatePersonDto } from './persons.dto.js';
 import { generateNationalId } from './national-id/national-id.js';
 import { PersonNotFoundException } from '../common/exceptions/person-not-found.exception.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -36,11 +36,11 @@ export class PersonsService {
             personId: person.id,
             action: 'created',
             changes: {
-              givenName: {from:null, to: person.givenName},
-              familyName: {from:null, to: person.familyName},
-              dateOfBirth: {from:null, to: person.dateOfBirth},
-              gender: {from:null, to: person.gender},
-              nationalId: {from:null, to: person.nationalId},
+              givenName: { from: null, to: person.givenName },
+              familyName: { from: null, to: person.familyName },
+              dateOfBirth: { from: null, to: person.dateOfBirth },
+              gender: { from: null, to: person.gender },
+              nationalId: { from: null, to: person.nationalId },
             },
             actor: actor,
           });
@@ -71,4 +71,50 @@ export class PersonsService {
 
     return person;
   }
+
+  async updatePerson(id: string, dto:UpdatePersonDto, actor:string) {
+
+    return this.prisma.$transaction(async (tx) => {
+      const person = await tx.person.findUnique({ where: { id: id } });
+
+      if (!person) {
+        throw new PersonNotFoundException(id);
+      }
+
+      const changes: Record<
+        string,
+        { from: Prisma.InputJsonValue | null; to: Prisma.InputJsonValue | null }
+      > = {};
+
+
+      
+
+      if (dto.familyName !== undefined && dto.familyName !== person.familyName){
+        changes.familyName = { from: person.familyName, to: dto.familyName };
+      }
+
+        const updatedPerson = await tx.person.update({
+          where: { id: id },
+          data: {
+            // Update fields as necessary
+            givenName: dto.givenName ?? person.givenName,
+            familyName: dto.familyName ?? person.familyName,
+            dateOfBirth: dto.dateOfBirth ?? person.dateOfBirth,
+            gender: dto.gender ?? person.gender,
+          },
+        });
+
+      await this.auditService.record(tx, {
+        personId: updatedPerson.id,
+        action: 'updated',
+        reason: dto.reason,
+        changes: changes,
+        actor: actor, 
+      });
+
+      return updatedPerson;
+    })
+  }
 }
+
+

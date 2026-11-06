@@ -44,4 +44,25 @@ describe('PersonsController (e2e), audit write fails', () => {
     // a person must never exist without a record of how they got here
     expect(await prisma.person.count()).toBe(0);
   });
+
+  it('if the audit write fails during a PATCH, the person is left unchanged', async () => {
+    // created straight through Prisma: POST /persons would fail here, because every audit write fails
+    const person = await prisma.person.create({
+      data: {
+        nationalId: '234567890124',
+        givenName: 'Ada',
+        familyName: 'Okafor',
+        dateOfBirth: new Date('1990-05-14'),
+      },
+    });
+
+    await request(app.getHttpServer())
+      .patch(`/persons/${person.id}`)
+      .send({ familyName: 'Okafor-Bello', reason: 'Corrected spelling from birth certificate' })
+      .expect(500);
+
+    // the update and its audit row are saved together or not at all
+    const saved = await prisma.person.findUnique({ where: { id: person.id } });
+    expect(saved?.familyName).toBe('Okafor');
+  });
 });
