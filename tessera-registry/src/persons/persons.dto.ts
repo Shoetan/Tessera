@@ -72,3 +72,10 @@ export class UpdatePersonDto extends PartialType(CreatePersonDto) {
   reason: string;
 }
 
+
+export class DeactivatePersonDto {
+@IsString()
+@IsNotEmpty()
+reason: string;
+}
+

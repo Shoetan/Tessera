@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreatePersonDto, UpdatePersonDto } from './persons.dto.js';
+import { CreatePersonDto, DeactivatePersonDto, UpdatePersonDto } from './persons.dto.js';
 import { generateNationalId } from './national-id/national-id.js';
 import { PersonNotFoundException } from '../common/exceptions/person-not-found.exception.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { AuditService } from '../audit/audit.service.js';
+import { PersonAlreadyInactiveException } from '../common/exceptions/person-already-inactive.exception.js';
 
 // A taken national ID is retried with a fresh one, but never forever (Decisions Log, 2026-10-07)
 const MAX_ATTEMPTS = 3;
@@ -72,8 +73,7 @@ export class PersonsService {
     return person;
   }
 
-  async updatePerson(id: string, dto:UpdatePersonDto, actor:string) {
-
+  async updatePerson(id: string, dto: UpdatePersonDto, actor: string) {
     return this.prisma.$transaction(async (tx) => {
       const person = await tx.person.findUnique({ where: { id: id } });
 
@@ -86,47 +86,93 @@ export class PersonsService {
         { from: Prisma.InputJsonValue | null; to: Prisma.InputJsonValue | null }
       > = {};
 
-       const fields = ['givenName', 'familyName', 'dateOfBirth', 'gender'] as const;
+      const fields = [
+        'givenName',
+        'familyName',
+        'dateOfBirth',
+        'gender',
+      ] as const;
 
-       for (const field of fields) {
-
+      for (const field of fields) {
         if (field === 'dateOfBirth') {
           if (
             dto.dateOfBirth !== undefined &&
             dto.dateOfBirth.getTime() !== person.dateOfBirth.getTime()
           ) {
-            changes.dateOfBirth = { from: person.dateOfBirth, to: dto.dateOfBirth };
+            changes.dateOfBirth = {
+              from: person.dateOfBirth,
+              to: dto.dateOfBirth,
+            };
           }
         } else {
           if (dto[field] !== undefined && dto[field] !== person[field]) {
             changes[field] = { from: person[field], to: dto[field] };
           }
         }
-       }
+      }
 
-       if(Object.keys(changes).length === 0) { return person} // if nothing is updated in changes 
+      if (Object.keys(changes).length === 0) {
+        return person;
+      } // if nothing is updated in changes
 
-        const updatedPerson = await tx.person.update({
-          where: { id: id },
-          data: {
-            // Update fields as necessary
-            givenName: dto.givenName ?? person.givenName,
-            familyName: dto.familyName ?? person.familyName,
-            dateOfBirth: dto.dateOfBirth ?? person.dateOfBirth,
-            gender: dto.gender ?? person.gender,
-          },
-        });
+      const updatedPerson = await tx.person.update({
+        where: { id: id },
+        data: {
+          // Update fields as necessary
+          givenName: dto.givenName ?? person.givenName,
+          familyName: dto.familyName ?? person.familyName,
+          dateOfBirth: dto.dateOfBirth ?? person.dateOfBirth,
+          gender: dto.gender ?? person.gender,
+        },
+      });
 
       await this.auditService.record(tx, {
         personId: updatedPerson.id,
         action: 'updated',
         reason: dto.reason,
         changes: changes,
-        actor: actor, 
+        actor: actor,
       });
 
       return updatedPerson;
-    })
+    });
+  }
+
+  async deactivatePerson(id: string, dto: DeactivatePersonDto, actor: string) {
+
+    return this.prisma.$transaction (async (tx) => {
+
+       const person = await tx.person.findUnique({ where: { id: id } });
+
+       if (!person) {
+         throw new PersonNotFoundException(id);
+       }
+
+       if(person.status === "inactive") {throw new PersonAlreadyInactiveException(id)}
+
+       const updatedPersonStatus = await tx.person.update({
+        where:{id:id},
+        data:{
+          status:"inactive"
+        }
+       })
+
+       await this.auditService.record(tx, {
+         personId: updatedPersonStatus.id,
+         action: 'deactivated',
+         reason: dto.reason,
+         changes: {status:{from:person.status, to:updatedPersonStatus.status}},
+         actor: actor,
+       });
+
+
+       return updatedPersonStatus
+
+
+    }) 
+
+    
+
   }
 }
 

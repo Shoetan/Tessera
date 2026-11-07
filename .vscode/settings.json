@@ -1,0 +1,23 @@
+{
+  // Learning mode: IntelliSense stays ON, AI ghost text is OFF.
+  // I want to type the syntax myself in this project.
+
+  // Blue dropdown from the language server: keep it.
+  "editor.quickSuggestions": {
+    "other": "on",
+    "comments": "off",
+    "strings": "off"
+  },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.parameterHints.enabled": true,
+
+  // Grey inline ghost text: off, in every flavour.
+  "editor.inlineSuggest.enabled": false,
+  "github.copilot.enable": {
+    "*": false
+  },
+  "github.copilot.nextEditSuggestions.enabled": false,
+  "geminicodeassist.inlineSuggestions.enableAuto": false,
+  "geminicodeassist.displayInlineContextHint": false,
+  "tabnine.disableLineSuggestions": true
+}
