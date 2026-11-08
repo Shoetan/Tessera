@@ -11,6 +11,7 @@ import {
 import { CreatePersonDto, DeactivatePersonDto, PersonResponseDto, UpdatePersonDto } from './persons.dto.js';
 import { PersonsService } from './persons.service.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
+import { AuditHistoryResponseDto } from '../audit/audit.dto.js';
 
 @ApiTags('persons')
 @Controller('persons')
@@ -85,7 +86,7 @@ export class PersonsController {
     summary: "A person's full change history, oldest first.",
   })
   @ApiParam({ name: 'id', example: '3f2b8c1e-6d4a-4f7e-9b2c-1a5d7e9f0c3b' })
-  // @ApiOkResponse({ type: PersonResponseDto })
+  @ApiOkResponse({ type: AuditHistoryResponseDto })
   @ApiNotFoundResponse({
     type: ErrorResponseDto,
     description: 'No person has this id',
