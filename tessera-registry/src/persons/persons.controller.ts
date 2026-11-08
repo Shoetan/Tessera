@@ -73,6 +73,29 @@ export class PersonsController {
     @Param('id') id: string,
     @Body() deactivatePersonDto: DeactivatePersonDto,
   ) {
-    return this.personsService.deactivatePerson(id, deactivatePersonDto, 'system');
+    return this.personsService.deactivatePerson(
+      id,
+      deactivatePersonDto,
+      'system',
+    );
+  }
+
+  @Get(':id/audit')
+  @ApiOperation({
+    summary: "A person's full change history, oldest first.",
+  })
+  @ApiParam({ name: 'id', example: '3f2b8c1e-6d4a-4f7e-9b2c-1a5d7e9f0c3b' })
+  // @ApiOkResponse({ type: PersonResponseDto })
+  @ApiNotFoundResponse({
+    type: ErrorResponseDto,
+    description: 'No person has this id',
+  })
+  async fetchPersonAuditHistory(@Param('id') id: string) {
+    const items = await this.personsService.getAuditHistory(id);
+
+    return {
+      items:items,
+      nextCursor:null
+    }
   }
 }

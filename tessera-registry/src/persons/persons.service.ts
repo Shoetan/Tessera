@@ -174,6 +174,12 @@ export class PersonsService {
     
 
   }
+
+  async getAuditHistory (id:string) {
+    await this.findPersonById(id)
+    return this.auditService.findForPerson(id)
+
+  }
 }
 
 
