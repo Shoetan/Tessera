@@ -180,6 +180,17 @@ export class PersonsService {
     return this.auditService.findForPerson(id, limit, cursor);
 
   }
+
+  async fetchAllPersons (limit:number, cursor?:string) {
+    const entries = await this.prisma.person.findMany({ take: limit + 1,  ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) });
+
+
+      const hasMore = entries.length > limit;
+      const items = hasMore ? entries.slice(0, limit) : entries;
+      const nextCursor = hasMore ? items[items.length - 1].id : null;
+
+      return { items, nextCursor };
+  }
 }
 
 
