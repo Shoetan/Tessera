@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Patch, HttpCode } from '@nestjs/common';
+import { Body, Controller, Get, Param, Query, Post, Patch, HttpCode } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -6,12 +6,14 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreatePersonDto, DeactivatePersonDto, PersonResponseDto, UpdatePersonDto } from './persons.dto.js';
 import { PersonsService } from './persons.service.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 import { AuditHistoryResponseDto } from '../audit/audit.dto.js';
+import { CursorPaginationQueryDto, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from '../common/dto/pagination.dto.js';
 
 @ApiTags('persons')
 @Controller('persons')
@@ -86,17 +88,26 @@ export class PersonsController {
     summary: "A person's full change history, oldest first.",
   })
   @ApiParam({ name: 'id', example: '3f2b8c1e-6d4a-4f7e-9b2c-1a5d7e9f0c3b' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: `Max entries to return, 1-${MAX_PAGE_LIMIT}`,
+    example: DEFAULT_PAGE_LIMIT,
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'The nextCursor from a previous page, to fetch the page after it',
+    example: '9a1c4e2b-7f3d-4b8a-a6e1-2d5c8f0b3e74',
+  })
   @ApiOkResponse({ type: AuditHistoryResponseDto })
   @ApiNotFoundResponse({
     type: ErrorResponseDto,
     description: 'No person has this id',
   })
-  async fetchPersonAuditHistory(@Param('id') id: string) {
-    const items = await this.personsService.getAuditHistory(id);
-
-    return {
-      items:items,
-      nextCursor:null
-    }
+  async fetchPersonAuditHistory(@Param('id') id: string, @Query() query: CursorPaginationQueryDto) {
+    return this.personsService.getAuditHistory(id, query.limit, query.cursor);
   }
 }

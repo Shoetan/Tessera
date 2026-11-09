@@ -175,9 +175,9 @@ export class PersonsService {
 
   }
 
-  async getAuditHistory (id:string) {
+  async getAuditHistory (id:string, limit:number, cursor?: string) {
     await this.findPersonById(id)
-    return this.auditService.findForPerson(id)
+    return this.auditService.findForPerson(id, limit, cursor);
 
   }
 }
