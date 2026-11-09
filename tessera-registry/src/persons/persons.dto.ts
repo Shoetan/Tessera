@@ -66,6 +66,19 @@ export class PersonResponseDto {
   updatedAt: Date;
 }
 
+export class PersonsListResponseDto {
+  @ApiProperty({ type: [PersonResponseDto] })
+  items: PersonResponseDto[];
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '3f2b8c1e-6d4a-4f7e-9b2c-1a5d7e9f0c3b',
+    description: 'Pass this as cursor to get the next page; null on the last page',
+  })
+  nextCursor: string | null;
+}
+
 export class UpdatePersonDto extends PartialType(CreatePersonDto) {
   @IsString()
   @IsNotEmpty()

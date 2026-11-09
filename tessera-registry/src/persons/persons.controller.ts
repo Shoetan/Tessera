@@ -9,7 +9,13 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { CreatePersonDto, DeactivatePersonDto, PersonResponseDto, UpdatePersonDto } from './persons.dto.js';
+import {
+  CreatePersonDto,
+  DeactivatePersonDto,
+  PersonResponseDto,
+  PersonsListResponseDto,
+  UpdatePersonDto,
+} from './persons.dto.js';
 import { PersonsService } from './persons.service.js';
 import { ErrorResponseDto } from '../common/dto/error-response.dto.js';
 import { AuditHistoryResponseDto } from '../audit/audit.dto.js';
@@ -109,5 +115,29 @@ export class PersonsController {
   })
   async fetchPersonAuditHistory(@Param('id') id: string, @Query() query: CursorPaginationQueryDto) {
     return this.personsService.getAuditHistory(id, query.limit, query.cursor);
+  }
+
+
+  @Get()
+  @ApiOperation({
+    summary: 'A page of registered people',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: `Max entries to return, 1-${MAX_PAGE_LIMIT}`,
+    example: DEFAULT_PAGE_LIMIT,
+  })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description: 'The nextCursor from a previous page, to fetch the page after it',
+    example: '9a1c4e2b-7f3d-4b8a-a6e1-2d5c8f0b3e74',
+  })
+  @ApiOkResponse({ type: PersonsListResponseDto })
+  async fetchAllPersons(@Query() query: CursorPaginationQueryDto) {
+    return this.personsService.fetchAllPersons(query.limit, query.cursor);
   }
 }

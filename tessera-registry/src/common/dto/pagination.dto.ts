@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsOptional,  IsUUID, Max, Min } from 'class-validator';
 
 export const DEFAULT_PAGE_LIMIT = 20;
 export const MAX_PAGE_LIMIT = 100;
@@ -7,7 +7,7 @@ export const MAX_PAGE_LIMIT = 100;
 /* Query params for cursor-based list endpoints: ?cursor=<id>&limit=20 */
 export class CursorPaginationQueryDto {
   @IsOptional()
-  @IsString()
+   @IsUUID()
   cursor?: string;
 
   @IsOptional()
