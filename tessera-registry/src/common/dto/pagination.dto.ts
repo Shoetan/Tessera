@@ -20,6 +20,6 @@ export class CursorPaginationQueryDto {
 
 /* What a cursor-based list endpoint returns; nextCursor is null on the last page */
 export class PaginatedResponseDto<T> {
-  data: T[];
+  items: T[];
   nextCursor: string | null;
 }
