@@ -73,7 +73,7 @@ The ordering is not arbitrary. You cannot meaningfully consent to sharing data a
 
 | Layer | Answers | Status |
 |---|---|---|
-| **[tessera-registry](./tessera-registry)** | Who exists? | 🟡 In progress |
+| **[tessera-registry](./tessera-registry)** | Who exists? | 🟢 Shipped |
 | **[tessera-verify](./tessera-verify)** | Are you who you claim? | 🔴 Planned |
 | **[tessera-consent](./tessera-consent)** | Who may know what about you? | 🔴 Planned |
 | **[tessera-disburse](./tessera-disburse)** | What are you entitled to? | 🔴 Planned |
@@ -149,8 +149,8 @@ Each layer runs on its own. See the README in each directory.
 ```bash
 cd tessera-registry
 docker compose up -d      # Postgres
-npm install
-npm run start:dev         # API docs at http://localhost:3000/api
+pnpm install
+pnpm start:dev            # API docs at http://localhost:5000/api
 ```
 
 ---
