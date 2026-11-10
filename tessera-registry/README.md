@@ -1,28 +1,12 @@
 # tessera-registry
 
-<!--
-  QUESTION: one sentence. What is this, and who is it for?
-  Pull straight from P0 Registry.md's "Business problem" framing, compressed to a single line.
-  e.g. "A foundational identity registry: one record per person, never reassigned, every change audited."
--->
+A foundational identity registry: one record per person, an identifier that is never reassigned, and a complete, immutable record of every change ever made to it.
 
-<!--
-  QUESTION: do you have a screenshot, GIF, or a Swagger UI capture to drop in docs/demo.<png|gif>?
-  The README pattern says a visual above the fold roughly doubles how long people stay —
-  cheapest win available. A screenshot of /api (Swagger) with a couple of expanded endpoints
-  is a completely legitimate "demo" for an API-only project; it doesn't need to be a GIF.
--->
-![demo](docs/demo.png)
+> Layer 1 of the [Tessera](../README.md) identity stack: **who exists**.
 
 ## The problem
 
-<!--
-  QUESTION: 2-3 sentences, business framing, zero technology named.
-  You already wrote this almost verbatim in P0 Registry.md under "Business problem (the
-  README's opening paragraph)" — it's the citizen-dispute framing. Reuse it, don't rewrite it.
-  Pattern note: "a reader who knows nothing about the domain should understand why someone
-  would pay for this." Resist the urge to mention NestJS/Prisma/Postgres here — that's Section 10.
--->
+A national ID authority needs a registry of persons, each with a unique and never-reassigned identifier, a small set of demographic attributes, and a complete record of every change ever made to their data. Auditability is not a feature here; it is the product. When a citizen disputes their record, the authority has to be able to show exactly what changed, when, and by whom.
 
 ## Quickstart
 
@@ -30,119 +14,80 @@
 docker compose up -d
 pnpm install
 pnpm exec prisma migrate deploy
-./scripts/seed.sh        # optional — fills the database with 100 synthetic people
+./scripts/seed.sh        # optional, fills the database with 100 synthetic people
 pnpm start:dev
 ```
 
-API docs: **http://localhost:5000/api** (Swagger UI)
-Importable collection: http://localhost:5000/api-json
+API docs: **http://localhost:5000/api** (Swagger UI) · importable collection at `/api-json`
 
-<!--
-  QUESTION: anything else a reader needs right after quickstart? e.g. a sample curl against
-  POST /persons, or "there's no seeded login because P0 has no auth yet" — one line is enough.
-  Before you push: clone this into a genuinely fresh directory and run exactly these commands.
-  If it doesn't work on a clean clone, nothing else in the file gets believed.
--->
+There's no login yet (see Scope): every endpoint is open, and every audit row records `actor: "system"`.
 
 ## What it does
 
-<!--
-  QUESTION: 5-8 bullets, phrased as outcomes/capabilities, not a mechanical endpoint list.
-  ("Looks up a person without ever exposing their national ID in a URL" reads better than
-  "GET /persons/:id".) The endpoint table below is the literal reference — this section is
-  the pitch. Draw from what each endpoint actually *means*:
-    - registers a person with a generated, Verhoeff-checked national ID
-    - looks a person up by internal id, never by national ID
-    - corrects a person's details and records exactly what changed, and why
-    - deactivates a person without ever deleting their record
-    - full, paged change history for any person — oldest first
-    - a cursor-paginated list of everyone registered, safe to walk even while people
-      are being registered concurrently
-    - one seed command to make a fresh clone worth looking at
--->
+- Registers a person with a server-generated, Verhoeff-checked national ID that's never client-supplied
+- Looks a person up by their internal id, never by national ID, so the citizen's number never ends up in a URL, log, or proxy
+- Corrects a person's details and records exactly what changed, from what, to what, and why
+- Deactivates a person without ever deleting the row, since identifiers are never reassigned
+- Writes the person row and its audit row in a single transaction, so a failed audit write rolls back the whole registration or correction rather than leaving one without the other
+- Returns a person's full change history, oldest first, paged so a long-lived record never returns its entire history at once
+- Lists everyone registered, cursor-paginated so the walk stays correct even while people are being registered concurrently
+- One seed command fills a fresh clone with 100 valid, audited people to look at
 
-| Method  | Path                      | Notes                                                        |
-| ------- | ------------------------- | --------------------------------------------------------------- |
-| `POST`  | `/persons`                | Create. Generates `nationalId`. Writes a `created` audit entry. |
-| `GET`   | `/persons`                | Cursor-paginated list.                                           |
-| `GET`   | `/persons/:id`            | Fetch one. 404 via the standard error envelope.                 |
-| `PATCH` | `/persons/:id`            | Partial update. Diffs old vs new, writes an `updated` entry.    |
-| `POST`  | `/persons/:id/deactivate` | Not a DELETE. Requires a `reason`.                              |
-| `GET`   | `/persons/:id/audit`      | Cursor-paginated change history, oldest first.                  |
-| `GET`   | `/health`                 | Liveness + database connectivity.                                |
+| Method  | Path                      | Notes                                                           |
+| ------- | ------------------------- | ---------------------------------------------------------------- |
+| `POST`  | `/persons`                | Create. Generates `nationalId`. Writes a `created` audit entry.  |
+| `GET`   | `/persons`                | Cursor-paginated list.                                            |
+| `GET`   | `/persons/:id`            | Fetch one. 404 via the standard error envelope.                  |
+| `PATCH` | `/persons/:id`            | Partial update. Diffs old vs new, writes an `updated` entry.     |
+| `POST`  | `/persons/:id/deactivate` | Not a DELETE. Requires a `reason`.                                |
+| `GET`   | `/persons/:id/audit`      | Cursor-paginated change history, oldest first.                   |
+| `GET`   | `/health`                 | Liveness + database connectivity.                                 |
 
 ## How it works
 
-<!--
-  QUESTION: a diagram (ASCII is fine) plus 2-3 sentences on the flow. Candidates worth drawing:
-    (a) the request path for PATCH /persons/:id — DTO validation -> service diffs old vs new
-        -> single transaction writes the Person row AND the audit row together
-    (b) AuditService injected into PersonsService — this is the one NestJS DI story the whole
-        project exists to tell (P0 Registry.md says so directly: "the single most important
-        thing in this project"). A small box diagram of PersonsController -> PersonsService ->
-        {PrismaService, AuditService} might be the single highest-value picture in this file.
--->
+```
+PersonsController
+      │  delegates, does no logic of its own
+      ▼
+PersonsService ──────┬──────────────► PrismaService (Postgres)
+  diffs old vs new    │
+  builds the audit     ▼
+  entry shape        AuditService ───► writes the audit row
+      │
+      ▼
+   one Prisma $transaction: the person row and its audit row
+   commit together, or neither does
+```
+
+`AuditService` is injected into `PersonsService` rather than called statically: the controller never touches it directly, and `PersonsService` never knows how an audit row is actually written, only that it can ask for one. That seam is what makes `persons-audit-fails.e2e-spec.ts` possible: it swaps in a fake `AuditService` that throws, with zero changes to `PersonsService` itself, and proves a failed audit write rolls the whole registration back rather than silently losing the trail.
+
+Every mutation (`POST /persons`, `PATCH /persons/:id`, `POST /persons/:id/deactivate`) runs inside one `prisma.$transaction`: the person row and its audit row are written together, and either both commit or neither does. There is no window where a person exists with no `created` row behind them, or a correction is saved with no record of what changed.
 
 ## Design decisions
 
-<!--
-  QUESTION: 2-4 entries, each: decision, why, and WHAT IT COST. A decision with no downside
-  listed reads as a decision you didn't actually make — that line from the README pattern is
-  worth re-reading before you write these.
+**Verhoeff check digit over a naive sum.** Real ID systems append a check digit so typos are caught before they become database corruption. Verhoeff catches every single-digit error and every adjacent transposition, which a mod-10 sum does not. Cost: one more digit to generate and validate than the simpler scheme, and a less widely known algorithm to explain.
 
-  Material already sitting in 01 — Decisions Log.md, just needs compressing to 2 lines each:
+**Deactivate, never delete.** A foundational registry's core promise is that an identifier is never reassigned. Deleting a row and letting a new person take its place would break that silently. Cost: every query has to filter on `status`, the table only ever grows, and deactivating someone already inactive has to be handled as a real state (409, not a silent success) rather than ignored.
 
-  1. Verhoeff check digit over a naive sum (2026-10-07 entry — lots of material here: random
-     not sequential, crypto-random not Math.random, no embedded meaning, 12 digits matching
-     Aadhaar). Cost: one more digit to type/misread than a shorter scheme.
+**The audit row is written inside the same transaction as the person row.** A person can't exist without their `created` entry, and a correction can't be saved without its `updated` entry. The audit trail is never allowed to drift from what actually happened. Cost: an audit-store failure now fails the entire registration or update, not just the logging; a slower or unavailable audit write blocks the person write too.
 
-  2. Deactivate, never delete (P0 Registry.md's design rules + the 2026-11-06 "409 not 400"
-     entry). Cost: every query has to filter on status; the table only ever grows.
-
-  3. Audit row written inside the same transaction as the person row (visible in
-     registerPerson/updatePerson/deactivatePerson — Prisma $transaction wrapping both writes).
-     Cost: worth naming honestly — what does coupling the audit write to the person write cost
-     you? (e.g. a slower transaction, a harder-to-extract audit log later, audit failures now
-     block the person write entirely — look at persons-audit-fails.e2e-spec.ts, that test exists
-     for exactly this reason)
-
-  4. Cursor pagination over page numbers (EMM-13, and the "registering someone part-way through
-     the walk doesn't shift or duplicate" test you wrote proves this one). NOTE: this decision
-     isn't in the Decisions Log yet — worth a quick entry there first, this is genuinely a good
-     interview story and the Log says a good one belongs there.
-
-  Pick 2-4, not all of them. The pattern explicitly says this section is "the whole game" —
-  it's the one thing in this README that can't be copied from a tutorial.
--->
+**Cursor pagination, not page numbers, on the list and history endpoints.** A page-number API's position is relative to the current table, so a row inserted mid-walk shifts every later page down by one: the reader sees a row twice and silently misses another. A cursor anchors to a specific row, so a concurrent insert can't move it. Cost: no jumping to "page 7", and no total count without a separate query.
 
 ## Scope
 
-<!--
-  QUESTION: what's built, and — more importantly — what did you deliberately leave out, and why?
-  P0 Registry.md already states this almost word for word under "Scope":
-    Built: persons CRUD, ID generation with check digit, immutable audit log, Swagger docs,
-    validation, error envelopes, tests, docker-compose.
-    Deliberately not built: authentication, biometrics, file uploads, AI, queues, a frontend,
-    deployment — each belongs to a later layer (P1-P3) of the stack.
-  Also worth a line: the audit actor is always "system" right now because P0 has no login
-  (2026-10-29 decision) — that's a scope statement, not a bug.
--->
+**Built:** persons CRUD, server-generated national ID with a check digit, an immutable audit log, cursor-paginated list and history endpoints, Swagger docs, request validation, consistent error envelopes, a seed script, and both unit and e2e tests.
+
+**Deliberately not built, all belonging to a later layer of the stack:** authentication (the audit actor is always `"system"` for now; a real principal arrives with P2's login), biometrics, file uploads, AI, queues, a frontend, deployment. Adding any of them here is how a "foundational registry" quietly becomes a three-month project.
 
 ## Testing
 
 ```bash
 pnpm test          # unit
-pnpm test:e2e       # integration, needs Docker (real Postgres)
-pnpm test:cov       # coverage report
+pnpm test:e2e      # integration, needs Docker (a real Postgres)
+pnpm test:cov      # coverage report
 ```
 
-<!--
-  QUESTION: state the real number. Last measured: 98% statements / 100% functions via the
-  e2e suite (`pnpm test:e2e --coverage`), comfortably over the >70% bar. Also worth one honest
-  line on what's NOT covered — the unit-only run (`pnpm test:cov`) is much lower because most
-  behavior is proven at the e2e layer instead; say that plainly rather than leaving the reader
-  to wonder why the two numbers differ.
--->
+98% statement coverage, 100% function coverage, measured via the e2e suite (`pnpm test:e2e --coverage`). Most behavior here is proven at that layer, against a real database, rather than with mocks. The unit-only number is lower on its own; that's expected, not a gap.
 
 ## Stack
 
@@ -154,16 +99,3 @@ pnpm test:cov       # coverage report
 | Validation | class-validator / class-transformer |
 | API docs | Swagger / OpenAPI |
 | Testing | Vitest (unit + e2e), Testcontainers for a real database in CI |
-
-<!--
-  Before you push (from the README pattern, don't skip this):
-  - [ ] Clone into a genuinely fresh directory and follow your own quickstart. It will fail
-        the first time. Fix it.
-  - [ ] First screen answers: what is this, why does it exist, does it work?
-  - [ ] Every claim is true TODAY, present tense — no "will support" for things not built
-  - [ ] At least one visual above the fold
-  - [ ] Design decisions section names the actual costs, not just the choices
-  - [ ] Read it out loud — the sentences you stumble on are the ones to cut
-  - [ ] 60-120 lines total once the comments above are gone. This file is intentionally
-        longer right now because of these prompts — cut hard.
--->
