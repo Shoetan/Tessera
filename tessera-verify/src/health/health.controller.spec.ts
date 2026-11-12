@@ -39,4 +39,14 @@ describe('HealthController', () => {
       ServiceUnavailableException,
     );
   });
+
+  it('throws with a clear message when redis is down', async () => {
+    const fakeRedis = {
+      ping: vi.fn().mockRejectedValue(new Error('connection refused')),
+    }
+
+    const controller = await buildWith(fakeRedis)
+
+    await expect(controller.checkHealth()).rejects.toThrow('Redis is down');
+  })
 });
