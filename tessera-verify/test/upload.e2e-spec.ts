@@ -74,7 +74,7 @@ describe('Upload (e2e)', () => {
     expect(existsSync(join(uploadDir, res.body.filename))).toBe(true);
   });
 
-  it('rejects an oversized file with 400', async () => {
+  it('multer rejects an oversized file with 413', async () => {
     const sixMB = Buffer.alloc(6 * 1024 * 1024, 0);
 
     const res = await request(app.getHttpServer())
@@ -84,7 +84,7 @@ describe('Upload (e2e)', () => {
         contentType: 'image/png',
       });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(413);
 
     // Nothing oversized should have been left behind on disk.
     const files = await readdir(uploadDir);

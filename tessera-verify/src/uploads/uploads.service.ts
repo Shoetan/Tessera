@@ -19,12 +19,6 @@ export class UploadsService {
       throw new BadRequestException('invalid file type');
     }
 
-    // validate file size (max 5mb)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      throw new BadRequestException('file is too large!');
-    }
-
     // --- NEW: all checks passed, so save the file to disk ---
     const uploadDir = this.configService.get<string>('UPLOAD_DIR');
     if (!uploadDir) {
